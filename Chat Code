@@ -1,0 +1,25 @@
+import tkinter as tk
+from tkinter import scrolledtext
+
+def send_message():
+    msg = entry.get()
+    if msg.strip():
+        chat_box.config(state='normal')
+        chat_box.insert(tk.END, "You: " + msg + "\n")
+        chat_box.config(state='disabled')
+        entry.delete(0, tk.END)
+        # Here we will save the message to XML later
+
+root = tk.Tk()
+root.title("Language App Chat")
+
+chat_box = scrolledtext.ScrolledText(root, state='disabled', width=50, height=20)
+chat_box.pack(padx=10, pady=10)
+
+entry = tk.Entry(root, width=40)
+entry.pack(side=tk.LEFT, padx=(10, 0), pady=(0, 10))
+
+send_button = tk.Button(root, text="Send", command=send_message)
+send_button.pack(side=tk.LEFT, padx=10, pady=(0, 10))
+
+root.mainloop()
