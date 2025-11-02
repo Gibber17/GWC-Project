@@ -1,25 +1,175 @@
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import ttk
+from datetime import datetime
 
-def send_message():
-    msg = entry.get()
-    if msg.strip():
-        chat_box.config(state='normal')
-        chat_box.insert(tk.END, "You: " + msg + "\n")
-        chat_box.config(state='disabled')
-        entry.delete(0, tk.END)
-        # Here we will save the message to XML later
+class ChatBubbleApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Language App Chat")
+        self.root.geometry("480x600")
 
-root = tk.Tk()
-root.title("Language App Chat")
+        # ==== Custom Colors ====
+        self.bg_color = "#FFF9C4"          # soft yellow background
+        self.user_bubble_color = "#FFB6C1" # pink chat bubble
+        self.bot_bubble_color = "#FFFFFF"  # white bot bubble
+        self.text_color = "#000000"        # black text
 
-chat_box = scrolledtext.ScrolledText(root, state='disabled', width=50, height=20)
-chat_box.pack(padx=10, pady=10)
+        # ==== Apply background ====
+        self.root.configure(bg=self.bg_color)
 
-entry = tk.Entry(root, width=40)
-entry.pack(side=tk.LEFT, padx=(10, 0), pady=(0, 10))
+        # ==== Top bar ====
+        self.top_frame = tk.Frame(root, bg=self.bg_color)
+        self.top_frame.pack(fill="x", side="top", pady=5, padx=10)
 
-send_button = tk.Button(root, text="Send", command=send_message)
-send_button.pack(side=tk.LEFT, padx=10, pady=(0, 10))
+        # Title label
+        self.title_label = tk.Label(
+            self.top_frame,
+            text="💬 French Bot",
+            bg=self.bg_color,
+            fg="#333333",
+            font=("Segoe UI", 12, "bold")
+        )
+        self.title_label.pack(side="left", anchor="w")
 
-root.mainloop()
+        # Settings button (top right)
+        self.settings_button = tk.Button(
+            self.top_frame,
+            text="⚙",                   # gear icon
+            bg=self.bg_color,
+            fg="#333333",
+            font=("Segoe UI", 14, "bold"),
+            relief="flat",
+            bd=0,
+            activebackground=self.bg_color,
+            activeforeground="#000000",
+            command=self.open_settings
+        )
+        self.settings_button.pack(side="right", anchor="e")
+
+        # ==== Main layout frames ====
+        self.chat_frame = tk.Frame(root, bg=self.bg_color)
+        self.chat_frame.pack(fill="both", expand=True)
+
+        self.entry_frame = tk.Frame(root, bg=self.bg_color)
+        self.entry_frame.pack(fill="x", side="bottom", padx=10, pady=10)
+
+        # ==== Scrollable chat area ====
+        self.chat_canvas = tk.Canvas(self.chat_frame, bg=self.bg_color, bd=0, highlightthickness=0)
+        self.scrollbar = ttk.Scrollbar(self.chat_frame, orient="vertical", command=self.chat_canvas.yview)
+        self.scrollable_frame = tk.Frame(self.chat_canvas, bg=self.bg_color)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.chat_canvas.configure(scrollregion=self.chat_canvas.bbox("all"))
+        )
+
+        self.chat_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.chat_canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.chat_canvas.pack(side="left", fill="both", expand=True, padx=10, pady=(10, 0))
+        self.scrollbar.pack(side="right", fill="y")
+
+        # ==== Entry Area (bottom) ====
+        self.entry = tk.Entry(self.entry_frame, font=("Segoe UI", 11), bg="white", fg="black")
+        self.entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.entry.bind("<Return>", self.send_message)
+
+        self.send_button = tk.Button(
+            self.entry_frame,
+            text="Send",
+            command=self.send_message,
+            bg="#E91E63",   # hot pink button
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            relief="flat",
+            padx=10,
+            pady=5
+        )
+        self.send_button.pack(side="right")
+
+        # Welcome message
+        self.add_message("System", "Welcome to the Language App Chat!", sender="bot")
+        self.add_message("System", "Bienvenue dans le chat de l'application Langues !", sender="bot")
+    # ==== Add message bubble ====
+    def add_message(self, name, message, sender="user"):
+        bubble_frame = tk.Frame(self.scrollable_frame, bg=self.bg_color)
+
+        # Bubble color and alignment
+        if sender == "user":
+            bubble_color = self.user_bubble_color
+            anchor = "e"
+            justify = "right"
+            padx = (100, 0)
+        elif sender == "bot":
+            bubble_color = self.bot_bubble_color
+            anchor = "w"
+            justify = "left"
+            padx = (0, 100)
+        else:
+            bubble_color = "#E0E0E0"
+            anchor = "center"
+            justify = "center"
+            padx = 0
+
+        # === Chat Bubble ===
+        label = tk.Label(
+            bubble_frame,
+            text=message,
+            bg=bubble_color,
+            fg=self.text_color,
+            font=("Segoe UI", 11),
+            wraplength=300,
+            justify=justify,
+            anchor=anchor,
+            padx=10,
+            pady=6,
+            bd=1,
+            relief="solid",
+        )
+        label.pack(padx=padx, pady=(4, 0), anchor=anchor, ipadx=5, ipady=2)
+
+        # === Timestamp ===
+        timestamp = datetime.now().strftime("%I:%M %p")
+        time_label = tk.Label(
+            bubble_frame,
+            text=timestamp,
+            bg=self.bg_color,
+            fg="#666666",
+            font=("Segoe UI", 8, "italic"),
+            justify=justify
+        )
+        time_label.pack(anchor=anchor, padx=padx, pady=(0, 6))
+
+        bubble_frame.pack(fill="x", pady=2)
+        self.root.after(100, lambda: self.chat_canvas.yview_moveto(1))
+
+    # ==== Handle sending message ====
+    def send_message(self, event=None):
+        msg = self.entry.get().strip()
+        if not msg:
+            return
+
+        self.add_message("You", msg, sender="user")
+        self.entry.delete(0, tk.END)
+
+        # Simulated bot reply
+        self.root.after(600, lambda: self.add_message("Bot", self.bot_reply(msg), sender="bot"))
+
+    def bot_reply(self, user_msg):
+        return f"You said: '{user_msg}'. Blah Blah"
+
+    # ==== Settings handler ====
+    def open_settings(self):
+        settings_window = tk.Toplevel(self.root)
+        settings_window.title("Settings")
+        settings_window.geometry("300x200")
+        settings_window.configure(bg="#FFF3E0")
+
+        tk.Label(settings_window, text="⚙ Settings", font=("Segoe UI", 14, "bold"), bg="#FFF3E0").pack(pady=10)
+        tk.Label(settings_window, text="(You can add real settings here later!)", bg="#FFF3E0").pack(pady=10)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ChatBubbleApp(root)
+    root.mainloop()
