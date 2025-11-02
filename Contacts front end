@@ -1,0 +1,51 @@
+import tkinter as tk
+from tkinter import ttk
+
+# --- Main window ---
+root = tk.Tk()
+root.title("Contacts")
+root.geometry("320x480")
+root.resizable(False, False)
+
+# --- Gradient background (simplified as solid color) ---
+canvas = tk.Canvas(root, width=320, height=480, bg="#f8e08e")
+canvas.pack(fill="both", expand=True)
+
+# --- Header frame ---
+header = tk.Frame(root, bg="#f06292", height=50)
+header.place(x=0, y=0, width=320)
+
+title = tk.Label(header, text="Contacts", bg="#f06292", fg="white", font=("Arial", 16, "bold"))
+title.pack(side="left", padx=15, pady=10)
+
+add_btn = tk.Button(header, text="+", bg="white", fg="#f06292", font=("Arial", 18, "bold"), borderwidth=0)
+add_btn.pack(side="right", padx=15)
+
+
+# --- Function to add contact cards ---
+def add_contact(y, name, progress, color="#f06292"):
+    frame = tk.Frame(root, bg="white")
+    frame.place(x=10, y=y, width=300, height=70)
+
+    # Contact icon as colored circle
+    icon_canvas = tk.Canvas(frame, width=40, height=40, bg="white", highlightthickness=0)
+    icon_canvas.place(x=10, y=15)
+    icon_canvas.create_oval(0, 0, 40, 40, fill=color, outline=color)
+
+    # Contact name
+    name_label = tk.Label(frame, text=name, bg="white", fg="black", font=("Arial", 12, "bold"))
+    name_label.place(x=60, y=10)
+
+    # Progress bar
+    style = ttk.Style()
+    style.configure("pink.Horizontal.TProgressbar", troughcolor="white", background="#f06292")
+    progress_bar = ttk.Progressbar(frame, style="pink.Horizontal.TProgressbar", length=220, value=progress)
+    progress_bar.place(x=60, y=40)
+
+
+# --- Add each contact ---
+add_contact(70, "French Bot", 100, "#2318f0")
+add_contact(150, "Spanish Bot", 100, "#e82217")
+add_contact(230, "German Bot", 100, "#f2d202")
+
+root.mainloop()
