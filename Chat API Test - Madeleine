@@ -8,34 +8,9 @@ def show(title, messages):
 def main():
     chat = ChatBackend()
     chat.enable_bot(True)
-
-    # 1) Send messages
     chat.send_message("Magali", "You", "hello")
-    chat.send_message("Magali", "You", "how are you?")
-
-    # 2) Show all messages
+    chat.send_message("Magali", "You", "translate this sentence please")
     show("All messages", chat.get_messages("Magali"))
-
-    # 3) Edit the last message
-    msgs = chat.get_messages("Magali")
-    if msgs:
-        last = msgs[-1]
-        chat.edit_message("Magali", last["ts"], "How are you doing today?")
-        show("After edit", chat.get_messages("Magali"))
-
-    # 4) Search
-    results = chat.search_messages("Magali", "how")
-    show("Search results for 'how'", results)
-
-    # 5) Delete one message
-    if msgs:
-        first = msgs[0]
-        chat.delete_message("Magali", first["ts"])
-        show("After deleting one", chat.get_messages("Magali"))
-
-    # 6) Delete all messages
-    chat.delete_history("Magali")
-    show("After deleting all", chat.get_messages("Magali"))
 
 if __name__ == "__main__":
     main()
