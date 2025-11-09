@@ -1,10 +1,9 @@
-# Chat backend for language app
+# Chat backend
 # Stores messages in XML, lets us send/get/edit/delete chats
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import time
-
 
 class ChatBackend:
     def __init__(self, file_name="messages.xml"):
@@ -12,14 +11,13 @@ class ChatBackend:
         self.demo_bot = False
         self.make_sure_file_exists()
 
-    # send a message and save it
     def send_message(self, contact_name, sender, text):
         contact_name = (contact_name or "").strip()
         text = (text or "").strip()
         sender = (sender or "You").strip()
 
         if not contact_name or not text:
-            print("⚠️ missing contact or text")
+            print("missing contact or text")
             return None
 
         tree, root = self.get_tree()
@@ -29,16 +27,14 @@ class ChatBackend:
         msg = ET.SubElement(contact, "message", {"sender": sender, "ts": str(ts)})
         msg.text = text
         self.save_tree(tree)
-        print("💾 saved message:", text)
+        print("saved message:", text)
 
-        # if bot is on, auto reply
         if self.demo_bot and sender.lower() != "bot":
             self.bot_reply(contact, text)
             self.save_tree(tree)
 
         return {"contact": contact_name, "sender": sender, "text": text, "ts": ts}
 
-    # get all messages for one contact
     def get_messages(self, contact_name, limit=None):
         contact_name = (contact_name or "").strip()
         if not contact_name or not self.chat_file.exists():
@@ -63,7 +59,6 @@ class ChatBackend:
             data = data[-limit:]
         return data
 
-    # delete all messages for one contact
     def delete_history(self, contact_name):
         contact_name = (contact_name or "").strip()
         if not contact_name:
@@ -76,10 +71,9 @@ class ChatBackend:
 
         root.remove(contact)
         self.save_tree(tree)
-        print("🗑️ deleted history for", contact_name)
+        print("deleted history for", contact_name)
         return True
 
-    # search chat for a keyword
     def search_messages(self, contact_name, keyword, limit=None):
         keyword = (keyword or "").strip().lower()
         if not keyword:
@@ -90,7 +84,6 @@ class ChatBackend:
             found = found[-limit:]
         return found
 
-    # edit one message
     def edit_message(self, contact_name, ts, new_text):
         new_text = (new_text or "").strip()
         if not contact_name or not isinstance(ts, int) or not new_text:
@@ -105,11 +98,10 @@ class ChatBackend:
             if self.safe_int(m.get("ts")) == ts:
                 m.text = new_text
                 self.save_tree(tree)
-                print("✏️ edited message")
+                print("edited message")
                 return True
         return False
 
-    # delete one message by timestamp
     def delete_message(self, contact_name, ts):
         if not contact_name or not isinstance(ts, int):
             return False
@@ -127,12 +119,10 @@ class ChatBackend:
                 return True
         return False
 
-    # turn the demo bot on/off
     def enable_bot(self, on=True):
         self.demo_bot = bool(on)
-        print("🤖 demo bot on" if on else "demo bot off")
+        print("demo bot on" if on else "demo bot off")
 
-    # format the time so it’s readable
     def readable_time(self, ts):
         try:
             t = time.localtime(ts)
@@ -140,7 +130,7 @@ class ChatBackend:
         except:
             return "unknown"
 
-    # helpers below
+    # helpers
 
     def make_sure_file_exists(self):
         if not self.chat_file.exists():
@@ -178,9 +168,34 @@ class ChatBackend:
             return found
         return ET.SubElement(root, "contact", {"name": name})
 
+    def get_gemini_translation(self, text, target_lang="fr"):
+        """
+        Placeholder function!!
+        Later, this will call Gemini AI to translate text into our desired language
+        """
+        # prompt the translation
+        if target_lang == "fr":
+            return f"(français simulé) {text}"
+        else:
+            return f"(english simulated) {text}"
+
     def bot_reply(self, contact, text):
-        reply = "Bonjour! 👋" if "hello" in text.lower() else f"I heard: {text}"
+        user_text = text.lower()
         ts = int(time.time())
+
+        if "hello" in user_text or "hi" in user_text:
+            reply = "Salut ! Tu veux pratiquer ton français aujourd’hui ?"
+        elif "how are you" in user_text:
+            reply = "Je vais super bien, merci ! Et toi, ça va ?"
+        elif "thank" in user_text:
+            reply = "Pas de problème ! Toujours là pour toi"
+        elif "bye" in user_text or "goodbye" in user_text:
+            reply = "À plus tard ! Prends soin de toi"
+        elif "help" in user_text:
+            reply = "Bien sûr ! Dis-moi le mot ou la phrase que tu veux traduire. 📖"
+        else:
+            reply = self.get_gemini_translation(text, target_lang="fr")
+
         bot_msg = ET.SubElement(contact, "message", {"sender": "Bot", "ts": str(ts)})
         bot_msg.text = reply
 
@@ -189,3 +204,4 @@ class ChatBackend:
             return int(val)
         except:
             return default
+
