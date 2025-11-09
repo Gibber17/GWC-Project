@@ -1,3 +1,4 @@
+# before running this you must enter this in your terminal: pip install googletrans
 import asyncio
 from googletrans import Translator, LANGUAGES
 
@@ -11,5 +12,6 @@ async def translate_text(text, dest='en', src='auto'):
         print(f"Original ({result.src}): {text}")
         print(f"Translated ({result.dest}): {result.text}")
         return result.text
+
 
 asyncio.run(translate_text("안녕하세요", dest='en'))
