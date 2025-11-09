@@ -49,3 +49,20 @@ add_contact(150, "Spanish Bot", 100, "#e82217")
 add_contact(230, "German Bot", 100, "#f2d202")
 
 root.mainloop()
+
+
+'''
+from XmlCreator import XmlCreator
+
+# creates a list of contacts that we can access
+
+# prompts user for input
+response = input("Would you like to add a contact? (Y or N) ")
+
+# if contacts.xml file is not already created make a new one and add
+if response.upper() == 'Y':
+    xml_creator = XmlCreator("Contacts.xml")
+    languageToLearn = input("What language do you want to learn? ")
+    contact1 = xml_creator.add_element(xml_creator.root, languageToLearn)
+    xml_creator.write_to_xml("Contacts.xml")
+'''
