@@ -14,3 +14,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Tested with:
+# Translation: chat.send_message("Magali", "You", "translate good morning")
+# Conversation: chat.send_message("Magali", "You", "how are you?") , chat.send_message("Magali", "You", "i love french food")
+# Fallback/not understanding: chat.send_message("Magali", "You", "what’s your favorite color?")
+
+
