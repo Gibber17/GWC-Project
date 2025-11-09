@@ -179,22 +179,38 @@ class ChatBackend:
         else:
             return f"(english simulated) {text}"
 
-    def bot_reply(self, contact, text):
+  def bot_reply(self, contact, text):
         user_text = text.lower()
         ts = int(time.time())
 
-        if "hello" in user_text or "hi" in user_text:
-            reply = "Salut ! Tu veux pratiquer ton français aujourd’hui ?"
-        elif "how are you" in user_text:
-            reply = "Je vais super bien, merci ! Et toi, ça va ?"
-        elif "thank" in user_text:
-            reply = "Pas de problème ! Toujours là pour toi"
-        elif "bye" in user_text or "goodbye" in user_text:
-            reply = "À plus tard ! Prends soin de toi"
-        elif "help" in user_text:
-            reply = "Bien sûr ! Dis-moi le mot ou la phrase que tu veux traduire. 📖"
+        if any(word in user_text for word in ["hello", "hi", "hey", "bonjour"]):
+            reply = "Salut ! Comment tu vas aujourd’hui ?"
+
+        elif "how are you" in user_text or "ça va" in user_text:
+            reply = "Je vais bien, merci. Et toi ?"
+
+        elif user_text.startswith("translate"):
+            phrase = text.split("translate", 1)[1].strip()
+            if phrase:
+                # Not actual translation, just set up for Gemini later
+                reply = f"En français, tu dirais : « {phrase} » 🇫🇷"
+            else:
+                reply = "Tu veux que je traduise quoi ?"
+
+        elif "food" in user_text or "eat" in user_text:
+            reply = "Miam, la nourriture française est la meilleure ! Tu veux apprendre des mots sur la cuisine ?"
+
+        elif "weather" in user_text:
+            reply = "Il fait toujours beau quand on parle français"
+
+        elif "thank" in user_text or "merci" in user_text:
+            reply = "De rien. C’est toujours un plaisir de t’aider."
+
+        elif "bye" in user_text or "goodbye" in user_text or "au revoir" in user_text:
+            reply = "À bientôt. Continue à pratiquer ton français !"
+
         else:
-            reply = self.get_gemini_translation(text, target_lang="fr")
+            reply = f"Je ne comprends pas encore « {text} », mais j’apprends !"
 
         bot_msg = ET.SubElement(contact, "message", {"sender": "Bot", "ts": str(ts)})
         bot_msg.text = reply
