@@ -9,7 +9,7 @@ class ChatBubbleApp:
         self.root.geometry("480x600")
 
         # ==== Custom Colors ====
-        self.bg_color = "#FFF9C4"          # soft yellow background
+        self.bg_color = "#f8e08e"          # soft yellow background
         self.user_bubble_color = "#FFB6C1" # pink chat bubble
         self.bot_bubble_color = "#FFFFFF"  # white bot bubble
         self.text_color = "#000000"        # black text
@@ -69,6 +69,9 @@ class ChatBubbleApp:
         self.chat_canvas.pack(side="left", fill="both", expand=True, padx=10, pady=(10, 0))
         self.scrollbar.pack(side="right", fill="y")
 
+    # === Mouse scroll support ====
+        self.chat_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
         # ==== Entry Area (bottom) ====
         self.entry = tk.Entry(self.entry_frame, font=("Segoe UI", 11), bg="white", fg="black")
         self.entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
@@ -90,6 +93,9 @@ class ChatBubbleApp:
         # Welcome message
         self.add_message("System", "Welcome to the Language App Chat!", sender="bot")
         self.add_message("System", "Bienvenue dans le chat de l'application Langues !", sender="bot")
+    # ==== Mouse wheel scroll ===
+    def _on_mousewheel(selfself,event):
+        self.chat_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
     # ==== Add message bubble ====
     def add_message(self, name, message, sender="user"):
         bubble_frame = tk.Frame(self.scrollable_frame, bg=self.bg_color)
@@ -173,3 +179,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = ChatBubbleApp(root)
     root.mainloop()
+
