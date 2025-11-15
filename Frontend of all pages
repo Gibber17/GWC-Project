@@ -45,8 +45,18 @@ class ChatBubbleApp(tk.Frame):
         chat_frame = tk.Frame(self, bg=self.bg_color)
         chat_frame.pack(fill="both", expand=True)
 
+        # Style the scrollbar
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure("Vertical.TScrollbar", 
+                       background="#E91E63",
+                       troughcolor=self.bg_color,
+                       bordercolor=self.bg_color,
+                       arrowcolor="white",
+                       width=15)
+
         self.chat_canvas = tk.Canvas(chat_frame, bg=self.bg_color, bd=0, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(chat_frame, orient="vertical", command=self.chat_canvas.yview)
+        scrollbar = ttk.Scrollbar(chat_frame, orient="vertical", command=self.chat_canvas.yview, style="Vertical.TScrollbar")
         self.scrollable_frame = tk.Frame(self.chat_canvas, bg=self.bg_color)
 
         self.scrollable_frame.bind(
@@ -77,8 +87,19 @@ class ChatBubbleApp(tk.Frame):
         )
         send_button.pack(side="right")
 
-        # Welcome message
-        self.add_message("System", f"Welcome to {self.bot_name}!", sender="bot")
+        # Load conversation history if it exists
+        self.load_conversation_history()
+
+    def load_conversation_history(self):
+        """Load previous conversation messages for this bot"""
+        if self.bot_name in self.controller.conversation_history:
+            for msg_data in self.controller.conversation_history[self.bot_name]:
+                self.add_message(msg_data["name"], msg_data["message"], sender=msg_data["sender"], save_to_history=False)
+        else:
+            # Welcome message for new conversation
+            self.add_message("System", f"Welcome to {self.bot_name}!", sender="bot")
+            # Initialize history for this bot
+            self.controller.conversation_history[self.bot_name] = []
 
     def _on_mousewheel(self, event):
         self.chat_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
@@ -104,7 +125,7 @@ class ChatBubbleApp(tk.Frame):
     def go_back(self):
         self.controller.show_frame("ContactsPage")
 
-    def add_message(self, name, message, sender="user"):
+    def add_message(self, name, message, sender="user", save_to_history=True):
         bubble_frame = tk.Frame(self.scrollable_frame, bg=self.bg_color)
         if sender == "user":
             bubble_color = self.user_bubble_color
@@ -129,6 +150,16 @@ class ChatBubbleApp(tk.Frame):
 
         bubble_frame.pack(fill="x", pady=2)
         self.after(100, lambda: self.chat_canvas.yview_moveto(1))
+        
+        # Save to conversation history
+        if save_to_history:
+            if self.bot_name not in self.controller.conversation_history:
+                self.controller.conversation_history[self.bot_name] = []
+            self.controller.conversation_history[self.bot_name].append({
+                "name": name,
+                "message": message,
+                "sender": sender
+            })
 
     def send_message(self, event=None):
         msg = self.entry.get().strip()
@@ -387,6 +418,9 @@ class LanguageApp(tk.Tk):
             "Spanish Bot": {"theme": "Light Mode", "difficulty": "Beginner - A1"},
             "German Bot": {"theme": "Light Mode", "difficulty": "Beginner - A1"},
         }
+        
+        # Store conversation history for each bot
+        self.conversation_history = {}
 
         self.frames = {}
         contacts_page = ContactsPage(self.container, self)
