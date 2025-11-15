@@ -1,68 +1,81 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox, simpledialog
 
-# --- Main window ---
+# --- Main window setup ---
 root = tk.Tk()
 root.title("Contacts")
 root.geometry("320x480")
 root.resizable(False, False)
 
-# --- Gradient background (simplified as solid color) ---
+# --- Background canvas (acts as the app background) ---
 canvas = tk.Canvas(root, width=320, height=480, bg="#f8e08e")
 canvas.pack(fill="both", expand=True)
 
-# --- Header frame ---
+# --- Header bar with title and "add" button ---
 header = tk.Frame(root, bg="#f06292", height=50)
 header.place(x=0, y=0, width=320)
 
 title = tk.Label(header, text="Contacts", bg="#f06292", fg="white", font=("Arial", 16, "bold"))
 title.pack(side="left", padx=15, pady=10)
 
-add_btn = tk.Button(header, text="+", bg="white", fg="#f06292", font=("Arial", 18, "bold"), borderwidth=0)
+# --- List of contacts currently displayed ---
+contacts = []
+
+# --- Function: Adds a new contact card for a language bot ---
+def add_language_bot(language):
+    if language in contacts:
+        messagebox.showinfo("Already Added", f"{language} bot is already added.")
+        return 
+    contacts.append(language)
+    # Card y-position is based on how many bots have been added
+    y = 70 + (len(contacts) - 1) * 80
+    custom_colors = {
+        "French": "#2318f0",
+        "Spanish": "#e82217",
+        "German": "#f2d202"
+    }
+    color = custom_colors.get(language, "#f06292")
+    bot_name = f"{language} Bot"
+    add_contact(y, bot_name, 100, color)
+
+# --- Function: Handles the '+' button click ---
+def on_add_button_click():
+    # Ask the user if they want to add a contact
+    result = messagebox.askyesno("Add Contact", "Would you like to add a contact?")
+    if not result:
+        return
+    # If yes, prompt for language input
+    language = simpledialog.askstring("Language", "What language do you want to learn?")
+    if language:
+        add_language_bot(language)
+
+# --- '+' Button to add contacts ---
+add_btn = tk.Button(header, text="+", bg="white", fg="#f06292", font=("Arial", 18, "bold"), borderwidth=0,
+                    command=on_add_button_click)
 add_btn.pack(side="right", padx=15)
 
-
-# --- Function to add contact cards ---
+# --- Function: Draws a contact bot card at the given position ---
 def add_contact(y, name, progress, color="#f06292"):
     frame = tk.Frame(root, bg="white")
     frame.place(x=10, y=y, width=300, height=70)
 
-    # Contact icon as colored circle
+    # Draws a colored circle for the contact icon
     icon_canvas = tk.Canvas(frame, width=40, height=40, bg="white", highlightthickness=0)
     icon_canvas.place(x=10, y=15)
     icon_canvas.create_oval(0, 0, 40, 40, fill=color, outline=color)
-
-    # Contact name
+    
+    # Label to show the contact name
     name_label = tk.Label(frame, text=name, bg="white", fg="black", font=("Arial", 12, "bold"))
     name_label.place(x=60, y=10)
 
-    # Progress bar
+    # Progress bar (100% by default, colored pink)
     style = ttk.Style()
     style.configure("pink.Horizontal.TProgressbar", troughcolor="white", background="#f06292")
     progress_bar = ttk.Progressbar(frame, style="pink.Horizontal.TProgressbar", length=220, value=progress)
     progress_bar.place(x=60, y=40)
 
-
-# --- Add each contact ---
-add_contact(70, "French Bot", 100, "#2318f0")
-add_contact(150, "Spanish Bot", 100, "#e82217")
-add_contact(230, "German Bot", 100, "#f2d202")
+# --- (No hardcoded contacts! All bots added by user interaction) ---
+# If you want to add a contact by default, you could call the function here
+# add_contact(70, "French Bot", 100, "#2318f0")
 
 root.mainloop()
-
-
-'''
-from XmlCreator import XmlCreator
-
-# creates a list of contacts that we can access
-
-# prompts user for input
-response = input("Would you like to add a contact? (Y or N) ")
-
-# if contacts.xml file is not already created make a new one and add
-if response.upper() == 'Y':
-    xml_creator = XmlCreator("Contacts.xml")
-    languageToLearn = input("What language do you want to learn? ")
-    contact1 = xml_creator.add_element(xml_creator.root, languageToLearn)
-    xml_creator.write_to_xml("Contacts.xml")
-'''
