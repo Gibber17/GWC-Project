@@ -59,6 +59,9 @@ class ChatBubbleApp(tk.Frame):
         self.chat_canvas.pack(side="left", fill="both", expand=True, padx=10, pady=(10, 0))
         scrollbar.pack(side="right", fill="y")
 
+        # Enable mouse wheel scrolling
+        self.chat_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
         # ==== Entry ====
         entry_frame = tk.Frame(self, bg=self.bg_color)
         entry_frame.pack(fill="x", side="bottom", padx=10, pady=10)
@@ -76,6 +79,9 @@ class ChatBubbleApp(tk.Frame):
 
         # Welcome message
         self.add_message("System", f"Welcome to {self.bot_name}!", sender="bot")
+
+    def _on_mousewheel(self, event):
+        self.chat_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
     def apply_theme(self, theme_name):
         if theme_name == "Dark Mode":
@@ -273,6 +279,9 @@ class ContactsPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.configure(bg="#f8e08e")
+        
+        # Track contacts
+        self.contacts = []
 
         # Header
         header = tk.Frame(self, bg="#f06292", height=50)
@@ -283,13 +292,62 @@ class ContactsPage(tk.Frame):
         title.pack(side="left", padx=15, pady=10)
 
         add_btn = tk.Button(header, text="+", bg="white", fg="#f06292",
-                            font=("Arial", 18, "bold"), borderwidth=0)
+                            font=("Arial", 18, "bold"), borderwidth=0,
+                            command=self.prompt_add_contact)
         add_btn.pack(side="right", padx=15)
 
-        # Contacts list
-        self.add_contact(70, "French Bot", "FB", 100, "#2318f0")
-        self.add_contact(150, "Spanish Bot", "SB", 100, "#e82217")
-        self.add_contact(230, "German Bot", "GB", 100, "#f2d202")
+        # Contacts list starts empty
+    
+    def prompt_add_contact(self):
+        from tkinter import messagebox, simpledialog
+        
+        # Ask if they want to add a contact
+        result = messagebox.askyesno("Add Contact", "Would you like to add a new contact?")
+        
+        if result:
+            # Ask what language
+            language = simpledialog.askstring("Language", "What language would you like to learn?")
+            
+            if language:
+                language = language.strip().capitalize()
+                bot_name = f"{language} Bot"
+                
+                # Check if already exists
+                if bot_name in self.contacts:
+                    messagebox.showinfo("Already Added", f"{bot_name} is already in your contacts!")
+                    return
+                
+                # Define colors for different languages
+                language_colors = {
+                    "French": "#2318f0",
+                    "Spanish": "#e82217",
+                    "German": "#f2d202",
+                    "Italian": "#009246",
+                    "Portuguese": "#006600",
+                    "Chinese": "#DE2910",
+                    "Japanese": "#BC002D",
+                    "Korean": "#003478",
+                }
+                
+                # Get color for language or use default pink
+                color = language_colors.get(language, "#f06292")
+                
+                # Get initials (first 2 letters)
+                initials = language[:2].upper()
+                
+                # Calculate position
+                y_position = 70 + len(self.contacts) * 80
+                
+                # Add to bot_settings if not exists
+                if bot_name not in self.controller.bot_settings:
+                    self.controller.bot_settings[bot_name] = {
+                        "theme": "Light Mode",
+                        "difficulty": "Beginner - A1"
+                    }
+                
+                # Add the contact
+                self.add_contact(y_position, bot_name, initials, 0, color)
+                self.contacts.append(bot_name)
 
     def add_contact(self, y, name, initials, progress, color="#f06292"):
         frame = tk.Frame(self, bg="white")
