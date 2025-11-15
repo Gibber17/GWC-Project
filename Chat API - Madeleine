@@ -1,5 +1,5 @@
 # Chat backend
-# Stores messages in XML, lets us send/get/edit/delete chats
+# Stores messages in XML, lets us get and save chats
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -8,149 +8,40 @@ from XmlCreator import XmlCreator
 from ChatBot import ChatBot
 
 class ChatBackend:
-    def sendMessage(self, contact_name, text):
-        contact_name = contact_name
-        userText = text
+    def __init__(self):
+        self.chat_file = Path("Contacts.xml")
+        self.make_sure_file_exists()  # ensure file exists
 
+    def saveMessage(self, contact_name, text):
         xml_creator = XmlCreator("Contacts.xml")
-        xml_creator.add_element(contact_name, "UserMessages", text=userText)
-        print("saved message:", userText)
-        xml_creator.get_Messages('Contacts.xml')
-    def get_messages(self, contact_name, limit=None):
-        contact_name = (contact_name or "").strip()
-        if not contact_name or not self.chat_file.exists():
-            return []
 
-        root = self.get_root()
-        contact = self.find_contact(root, contact_name)
+        # --- Load or create <contact> element ---
+        root = xml_creator.root
+        contact = root.find(f"./contact[name='{contact_name}']")
+
         if contact is None:
-            return []
+            # Create new contact
+            contact = ET.SubElement(root, "contact")
+            name_el = ET.SubElement(contact, "name")
+            name_el.text = contact_name
 
-        data = []
-        for m in contact.findall("message"):
-            item = {
-                "sender": m.get("sender", "You"),
-                "text": m.text or "",
-                "ts": self.safe_int(m.get("ts", "0")),
-            }
-            data.append(item)
-
-        data.sort(key=lambda x: x["ts"])
-        if isinstance(limit, int) and limit > 0:
-            data = data[-limit:]
-        return data
-
-    def delete_history(self, contact_name):
-        contact_name = (contact_name or "").strip()
-        if not contact_name:
-            return False
-
-        tree, root = self.get_tree()
-        contact = self.find_contact(root, contact_name)
-        if contact is None:
-            return False
-
-        root.remove(contact)
-        self.save_tree(tree)
-        print("deleted history for", contact_name)
-        return True
-
-    def search_messages(self, contact_name, keyword, limit=None):
-        keyword = (keyword or "").strip().lower()
-        if not keyword:
-            return []
-
-        found = [m for m in self.get_messages(contact_name) if keyword in m["text"].lower()]
-        if isinstance(limit, int) and limit > 0:
-            found = found[-limit:]
-        return found
-
-
-
-    def readable_time(self, ts):
-        try:
-            t = time.localtime(ts)
-            return f"{t.tm_year}-{t.tm_mon:02}-{t.tm_mday:02} {t.tm_hour:02}:{t.tm_min:02}"
-        except:
-            return "unknown"
-
-    # helpers
-
-
-
-    def get_tree(self):
-        try:
-            tree = ET.parse(self.chat_file)
-            return tree, tree.getroot()
-        except:
-            self.make_sure_file_exists()
-            tree = ET.parse(self.chat_file)
-            return tree, tree.getroot()
-
-    def save_tree(self, tree):
-        tree.write(self.chat_file, encoding="utf-8", xml_declaration=True)
-
-    def find_contact(self, root, name):
-        for c in root.findall("contact"):
-            if c.get("name") == name:
-                return c
-        return None
-
-    def find_or_create_contact(self, root, name):
-        found = self.find_contact(root, name)
-        if found is not None:
-            return found
-        return ET.SubElement(root, "contact", {"name": name})
-
-    def get_gemini_translation(self, text, target_lang="fr"):
-        """
-        Placeholder function!!
-        Later, this will call Gemini AI to translate text into our desired language
-        """
-        # prompt the translation
-        if target_lang == "fr":
-            return f"(français simulé) {text}"
+            messages_el = ET.SubElement(contact, "messages")
         else:
-            return f"(english simulated) {text}"
+            # Contact exists → find <messages>
+            messages_el = contact.find("messages")
+            if messages_el is None:
+                messages_el = ET.SubElement(contact, "messages")
 
-  def bot_reply(self, contact, text):
+        # --- Add new <message> element ---
+        xml_creator.add_element(messages_el, "message", text=text)
+
+        xml_creator.write_to_xml("Contacts.xml")
+        print("saved message:", text)
+
+    def bot_reply(self, contact, text):
         user_text = text.lower()
         ts = int(time.time())
 
-        if any(word in user_text for word in ["hello", "hi", "hey", "bonjour"]):
-            reply = "Salut ! Comment tu vas aujourd’hui ?"
-
-        elif "how are you" in user_text or "ça va" in user_text:
-            reply = "Je vais bien, merci. Et toi ?"
-
-        elif user_text.startswith("translate"):
-            phrase = text.split("translate", 1)[1].strip()
-            if phrase:
-                # Not actual translation, just set up for Gemini later
-                reply = f"En français, tu dirais : « {phrase} » 🇫🇷"
-            else:
-                reply = "Tu veux que je traduise quoi ?"
-
-        elif "food" in user_text or "eat" in user_text:
-            reply = "Miam, la nourriture française est la meilleure ! Tu veux apprendre des mots sur la cuisine ?"
-
-        elif "weather" in user_text:
-            reply = "Il fait toujours beau quand on parle français"
-
-        elif "thank" in user_text or "merci" in user_text:
-            reply = "De rien. C’est toujours un plaisir de t’aider."
-
-        elif "bye" in user_text or "goodbye" in user_text or "au revoir" in user_text:
-            reply = "À bientôt. Continue à pratiquer ton français !"
-
-        else:
-            reply = f"Je ne comprends pas encore « {text} », mais j’apprends !"
-
+        bot = ChatBot()
+        bot.sendMessage(user_text)
         bot_msg = ET.SubElement(contact, "message", {"sender": "Bot", "ts": str(ts)})
-        bot_msg.text = reply
-
-    def safe_int(self, val, default=0):
-        try:
-            return int(val)
-        except:
-            return default
