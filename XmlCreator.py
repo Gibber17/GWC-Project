@@ -31,29 +31,38 @@ class XmlCreator:
             tree.write(file, encoding="utf-8", xml_declaration=True)
 
     def get_Messages(xml_file):
-        contact_data = {}
+        lang_data = {}
+
         try:
             tree = ET.parse(xml_file)
             root = tree.getroot()
 
-            for contact_element in root.findall('contact'):
-                name_element = contact_element.find('name')
+            # Loop through each language tag
+            for lang_el in root:
+                language_name = lang_el.tag
+                messages = {
+                    "UserMessages": [],
+                    "BotMessages": []
+                }
 
-                if name_element is not None:
-                    contact_name = name_element.text
-                    messages = []
-                    messages_element = contact_element.find('messages')
+                # Get all <UserMessage>
+                for um in lang_el.findall("UserMessage"):
+                    if um.text:
+                        messages["UserMessages"].append(um.text.strip())
 
-                    if messages_element is not None:
-                        for message_element in messages_element.findall('message'):
-                            if message_element.text:
-                                messages.append(message_element.text.strip())
-                    contact_data[contact_name] = messages
+                # Get all <BotMessage>
+                for bm in lang_el.findall("BotMessage"):
+                    if bm.text:
+                        messages["BotMessages"].append(bm.text.strip())
+
+                lang_data[language_name] = messages
+
         except FileNotFoundError:
             print(f"Error: The file '{xml_file}' was not found.")
         except ET.ParseError as e:
             print(f"Error parsing XML file: {e}")
-        return contact_data
+
+        return lang_data
 
 '''
 example of how to create the xml file and add information to it
