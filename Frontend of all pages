@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
+from ChatBot import ChatBot
 
 # ================= CHAT PAGE ===================
 class ChatBubbleApp(tk.Frame):
@@ -123,23 +124,27 @@ class ChatBubbleApp(tk.Frame):
         bubble_frame.pack(fill="x", pady=2)
         self.after(100, lambda: self.chat_canvas.yview_moveto(1))
 
-    def send_message(self, event=None):
+        def send_message(self, event=None):
         msg = self.entry.get().strip()
         if not msg:
             return
+
+        # Add user message to UI
         self.add_message("You", msg, sender="user")
         self.entry.delete(0, tk.END)
-        self.after(600, lambda: self.add_message(self.bot_name, self.bot_reply(msg), sender="bot"))
+
+        # After delay, add bot reply
+        self.after(600, lambda: self.add_message(
+            self.bot_name,
+            self.bot_reply(msg),  # <-- bot_reply now returns a string
+            sender="bot"
+        ))
 
     def bot_reply(self, msg):
-        # Make response vary by difficulty
-        difficulty = self.controller.bot_settings[self.bot_name]["difficulty"]
-        if "Beginner" in difficulty:
-            return f"You said: '{msg}'. Bonjour!"
-        elif "Intermediate" in difficulty:
-            return f"You wrote: '{msg}'. Bien joué!"
-        else:  # Advanced
-            return f"Votre message: '{msg}' est reçu. Très bien!"
+        bot = ChatBot()
+        reply = bot.sendMessage(msg)
+        return reply
+
 
     def open_settings(self):
         settings_page_name = f"{self.bot_name}SettingsPage"
