@@ -124,7 +124,7 @@ class ChatBubbleApp(tk.Frame):
         bubble_frame.pack(fill="x", pady=2)
         self.after(100, lambda: self.chat_canvas.yview_moveto(1))
 
-        def send_message(self, event=None):
+    def send_message(self, event=None):
         msg = self.entry.get().strip()
         if not msg:
             return
