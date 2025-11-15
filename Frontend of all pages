@@ -407,7 +407,7 @@ class LanguageApp(tk.Tk):
         super().__init__()
         self.title("Contacts")
         self.geometry("330x520")
-        self.resizable(False, False)
+        self.resizable(True, True)
 
         self.container = tk.Frame(self)
         self.container.pack(fill="both", expand=True)
