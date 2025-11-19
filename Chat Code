@@ -9,10 +9,10 @@ class ChatBubbleApp:
         self.root.geometry("480x600")
 
         # ==== Custom Colors ====
-        self.bg_color = "#f8e08e"          # soft yellow background
-        self.user_bubble_color = "#FFB6C1" # pink chat bubble
-        self.bot_bubble_color = "#FFFFFF"  # white bot bubble
-        self.text_color = "#000000"        # black text
+        self.bg_color = "#FFFFFF"          # white background
+        self.user_bubble_color = "#4A90E2" # blue chat bubbles
+        self.bot_bubble_color = "#5CB85C"  # green bot bubbles
+        self.text_color = "#FFFFFF"        # white text on colored bubbles
 
         # ==== Apply background ====
         self.root.configure(bg=self.bg_color)
@@ -81,7 +81,7 @@ class ChatBubbleApp:
             self.entry_frame,
             text="Send",
             command=self.send_message,
-            bg="#E91E63",   # hot pink button
+            bg="#5CB85C",   # green button
             fg="white",
             font=("Segoe UI", 10, "bold"),
             relief="flat",

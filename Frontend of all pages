@@ -55,7 +55,7 @@ class ChatBubbleApp(tk.Frame):
                        arrowcolor="white",
                        width=8)  # Smaller width
         style.map("Vertical.TScrollbar",
-                 background=[('active', '#E91E63')])  # Magenta on hover
+                 background=[('active', '#4A90E2')])  # Blue on hover
 
         self.chat_canvas = tk.Canvas(chat_frame, bg=self.bg_color, bd=0, highlightthickness=0)
         scrollbar = ttk.Scrollbar(chat_frame, orient="vertical", command=self.chat_canvas.yview, style="Vertical.TScrollbar")
@@ -84,7 +84,7 @@ class ChatBubbleApp(tk.Frame):
 
         send_button = tk.Button(
             entry_frame, text="Send", command=self.send_message,
-            bg="#E91E63", fg="white", font=("Segoe UI", 10, "bold"),
+            bg="#5CB85C", fg="white", font=("Segoe UI", 10, "bold"),
             relief="flat", padx=10, pady=5
         )
         send_button.pack(side="right")
@@ -116,11 +116,11 @@ class ChatBubbleApp(tk.Frame):
             self.entry_bg = "#23272a"
             self.entry_fg = "#ffffff"
         else:  # Light Mode
-            self.bg_color = "#FFF9C4"
+            self.bg_color = "#FFFFFF"          # white background
             self.fg_color = "#000000"
-            self.user_bubble_color = "#FFB6C1"
-            self.bot_bubble_color = "#FFFFFF"
-            self.text_color = "#000000"
+            self.user_bubble_color = "#4A90E2"  # blue chat bubbles
+            self.bot_bubble_color = "#5CB85C"   # green bot bubbles
+            self.text_color = "#FFFFFF"         # white text on colored bubbles
             self.entry_bg = "white"
             self.entry_fg = "black"
 
@@ -311,20 +311,20 @@ class ContactsPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.configure(bg="#f8e08e")
+        self.configure(bg="#FFFFFF")
         
         # Track contacts
         self.contacts = []
 
         # Header
-        header = tk.Frame(self, bg="#f06292", height=50)
+        header = tk.Frame(self, bg="#4A90E2", height=50)
         header.pack(fill="x")
 
-        title = tk.Label(header, text="Contacts", bg="#f06292", fg="white",
+        title = tk.Label(header, text="Contacts", bg="#4A90E2", fg="white",
                          font=("Arial", 16, "bold"))
         title.pack(side="left", padx=15, pady=10)
 
-        add_btn = tk.Button(header, text="+", bg="white", fg="#f06292",
+        add_btn = tk.Button(header, text="+", bg="white", fg="#4A90E2",
                             font=("Arial", 18, "bold"), borderwidth=0,
                             command=self.prompt_add_contact)
         add_btn.pack(side="right", padx=15)
@@ -362,8 +362,8 @@ class ContactsPage(tk.Frame):
                     "Korean": "#003478",
                 }
                 
-                # Get color for language or use default pink
-                color = language_colors.get(language, "#f06292")
+                # Get color for language or use default blue
+                color = language_colors.get(language, "#4A90E2")
                 
                 # Get initials (first 2 letters)
                 initials = language[:2].upper()
@@ -382,7 +382,7 @@ class ContactsPage(tk.Frame):
                 self.add_contact(y_position, bot_name, initials, 0, color)
                 self.contacts.append(bot_name)
 
-    def add_contact(self, y, name, initials, progress, color="#f06292"):
+    def add_contact(self, y, name, initials, progress, color="#4A90E2"):
         frame = tk.Frame(self, bg="white")
         frame.place(x=10, y=y, width=300, height=70)
 
