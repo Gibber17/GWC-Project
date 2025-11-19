@@ -110,9 +110,9 @@ class ChatBubbleApp(tk.Frame):
         if theme_name == "Dark Mode":
             self.bg_color = "#2c2f33"
             self.fg_color = "#ffffff"
-            self.user_bubble_color = "#7289da"
-            self.bot_bubble_color = "#99aab5"
-            self.text_color = "#ffffff"
+            self.user_bubble_color = "#4A90E2"  # keep blue
+            self.bot_bubble_color = "#5CB85C"   # keep green
+            self.text_color = "#FFFFFF"         # white text
             self.entry_bg = "#23272a"
             self.entry_fg = "#ffffff"
         else:  # Light Mode
@@ -125,20 +125,47 @@ class ChatBubbleApp(tk.Frame):
             self.entry_fg = "black"
 
     def go_back(self):
+        # Update contacts page to match dark mode if needed
+        contacts_page = self.controller.frames.get("ContactsPage")
+        if contacts_page:
+            # Check if any bot is using dark mode
+            is_dark = any(settings.get("theme") == "Dark Mode" 
+                         for settings in self.controller.bot_settings.values())
+            if is_dark:
+                contacts_page.configure(bg="#2c2f33")
+                # Update header and other elements
+                for widget in contacts_page.winfo_children():
+                    if isinstance(widget, tk.Frame):
+                        widget.configure(bg="#2c2f33")
+                        for child in widget.winfo_children():
+                            if isinstance(child, tk.Label):
+                                child.configure(bg="#2c2f33", fg="#ffffff")
+            else:
+                contacts_page.configure(bg="#FFFFFF")
+                for widget in contacts_page.winfo_children():
+                    if isinstance(widget, tk.Frame):
+                        if "#4A90E2" in str(widget.cget("bg")):  # Keep header blue
+                            continue
+                        widget.configure(bg="#FFFFFF")
+                        for child in widget.winfo_children():
+                            if isinstance(child, tk.Label):
+                                if "#4A90E2" in str(child.cget("bg")):  # Keep header
+                                    continue
+                                child.configure(bg="#FFFFFF", fg="#000000")
         self.controller.show_frame("ContactsPage")
 
     def add_message(self, name, message, sender="user", save_to_history=True):
         bubble_frame = tk.Frame(self.scrollable_frame, bg=self.bg_color)
         if sender == "user":
             bubble_color = self.user_bubble_color
-            anchor, justify, padx = "e", "right", (100, 0)
+            anchor, justify, padx = "e", "left", (100, 0)
         else:
             bubble_color = self.bot_bubble_color
             anchor, justify, padx = "w", "left", (0, 100)
 
         label = tk.Label(
             bubble_frame, text=message, bg=bubble_color, fg=self.text_color,
-            font=("Segoe UI", 11), wraplength=300, justify=justify, anchor=anchor,
+            font=("Segoe UI", 11), wraplength=300, justify=justify, anchor="w",
             padx=10, pady=6, bd=1, relief="solid",
         )
         label.pack(padx=padx, pady=(4, 0), anchor=anchor, ipadx=5, ipady=2)
@@ -204,16 +231,17 @@ class LanguageBotSettingsPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.bot_name = bot_name
-        self.configure(bg="#f8e08e")
+        self.configure(bg="#FFFFFF")
 
         # Header
-        header_frame = tk.Frame(self, bg="#f8e08e")
+        header_frame = tk.Frame(self, bg="#FFFFFF")
         header_frame.pack(pady=20)
         tk.Label(
             header_frame,
             text=f"⚙ {self.bot_name} Settings",
             font=("Helvetica", 18, "bold"),
-            bg="#f8e08e"
+            bg="#FFFFFF",
+            fg="#4A90E2"
         ).pack()
 
         # Theme Button
@@ -254,11 +282,11 @@ class ThemePage(tk.Toplevel):
         super().__init__(parent)
         self.title("Theme Settings")
         self.geometry("400x400")
-        self.configure(bg="#e8daf7")
+        self.configure(bg="#FFFFFF")
         self.parent = parent
         self.bot_name = bot_name
 
-        tk.Label(self, text="Choose a Theme", font=("Helvetica", 18, "bold"), bg="#e8daf7").pack(pady=30)
+        tk.Label(self, text="Choose a Theme", font=("Helvetica", 18, "bold"), bg="#FFFFFF", fg="#4A90E2").pack(pady=30)
         ttk.Button(self, text="Light Mode", command=lambda: self.set_theme("Light Mode")).pack(pady=10)
         ttk.Button(self, text="Dark Mode", command=lambda: self.set_theme("Dark Mode")).pack(pady=10)
         ttk.Button(self, text="Back", command=self.go_back).pack(pady=30)
@@ -270,12 +298,35 @@ class ThemePage(tk.Toplevel):
         # Apply theme to chat immediately
         chat_frame = self.parent.controller.frames.get("ChatBubbleApp")
         if chat_frame and chat_frame.bot_name == self.bot_name:
+            chat_frame.theme = theme_name
             chat_frame.apply_theme(theme_name)
+            
+            # Update all UI elements
             chat_frame.configure(bg=chat_frame.bg_color)
             chat_frame.chat_canvas.configure(bg=chat_frame.bg_color)
             chat_frame.scrollable_frame.configure(bg=chat_frame.bg_color)
             chat_frame.entry.configure(bg=chat_frame.entry_bg, fg=chat_frame.entry_fg)
-            chat_frame.title_label.configure(fg=chat_frame.fg_color)
+            
+            # Update top bar elements
+            for widget in chat_frame.winfo_children():
+                if isinstance(widget, tk.Frame):
+                    widget.configure(bg=chat_frame.bg_color)
+                    for child in widget.winfo_children():
+                        if isinstance(child, (tk.Label, tk.Button)):
+                            child.configure(bg=chat_frame.bg_color, fg=chat_frame.fg_color)
+            
+            # Update all existing message bubbles
+            for widget in chat_frame.scrollable_frame.winfo_children():
+                widget.configure(bg=chat_frame.bg_color)
+                for child in widget.winfo_children():
+                    if isinstance(child, tk.Label):
+                        # Check if it's a message bubble or timestamp
+                        if child.cget("relief") == "solid":  # Message bubble
+                            # Keep the bubble background colors (user=blue, bot=green)
+                            # Just update the background frame, not the bubble colors
+                            pass
+                        else:  # Timestamp
+                            child.configure(bg=chat_frame.bg_color)
         self.go_back()
 
     def go_back(self):
@@ -287,11 +338,11 @@ class DifficultyPage(tk.Toplevel):
         super().__init__(parent)
         self.title("Difficulty Settings")
         self.geometry("400x400")
-        self.configure(bg="#e0e4f7")
+        self.configure(bg="#FFFFFF")
         self.parent = parent
         self.bot_name = bot_name
 
-        tk.Label(self, text="Select Difficulty", font=("Helvetica", 18, "bold"), bg="#e0e4f7").pack(pady=30)
+        tk.Label(self, text="Select Difficulty", font=("Helvetica", 18, "bold"), bg="#FFFFFF", fg="#5CB85C").pack(pady=30)
         ttk.Button(self, text="Beginner - A1", command=lambda: self.set_difficulty("Beginner - A1")).pack(pady=10)
         ttk.Button(self, text="Intermediate - B1", command=lambda: self.set_difficulty("Intermediate - B1")).pack(pady=10)
         ttk.Button(self, text="Advanced - C1", command=lambda: self.set_difficulty("Advanced - C1")).pack(pady=10)
