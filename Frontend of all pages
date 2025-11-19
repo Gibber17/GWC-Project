@@ -125,33 +125,7 @@ class ChatBubbleApp(tk.Frame):
             self.entry_fg = "black"
 
     def go_back(self):
-        # Update contacts page to match dark mode if needed
-        contacts_page = self.controller.frames.get("ContactsPage")
-        if contacts_page:
-            # Check if any bot is using dark mode
-            is_dark = any(settings.get("theme") == "Dark Mode" 
-                         for settings in self.controller.bot_settings.values())
-            if is_dark:
-                contacts_page.configure(bg="#2c2f33")
-                # Update header and other elements
-                for widget in contacts_page.winfo_children():
-                    if isinstance(widget, tk.Frame):
-                        widget.configure(bg="#2c2f33")
-                        for child in widget.winfo_children():
-                            if isinstance(child, tk.Label):
-                                child.configure(bg="#2c2f33", fg="#ffffff")
-            else:
-                contacts_page.configure(bg="#FFFFFF")
-                for widget in contacts_page.winfo_children():
-                    if isinstance(widget, tk.Frame):
-                        if "#4A90E2" in str(widget.cget("bg")):  # Keep header blue
-                            continue
-                        widget.configure(bg="#FFFFFF")
-                        for child in widget.winfo_children():
-                            if isinstance(child, tk.Label):
-                                if "#4A90E2" in str(child.cget("bg")):  # Keep header
-                                    continue
-                                child.configure(bg="#FFFFFF", fg="#000000")
+        # Contacts page always stays in light mode
         self.controller.show_frame("ContactsPage")
 
     def add_message(self, name, message, sender="user", save_to_history=True):
