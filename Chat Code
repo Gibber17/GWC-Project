@@ -9,8 +9,8 @@ class ChatBubbleApp:
         self.root.geometry("480x600")
 
         # ==== Custom Colors ====
-        self.bg_color = "#f8e08e"          # soft yellow background
-        self.user_bubble_color = "#FFB6C1" # pink chat bubble
+        self.bg_color = "#E5E5EA"          # light grey background
+        self.user_bubble_color = "147EFB" # blue chat bubble
         self.bot_bubble_color = "#FFFFFF"  # white bot bubble
         self.text_color = "#000000"        # black text
 
