@@ -2,6 +2,22 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
 from ChatBot import ChatBot
+from Languages import Languages
+from XmlCreator import XmlCreator
+import xml.etree.ElementTree as ET
+import asyncio
+
+# helper method for bot reply
+def run_async(coro):
+    """Helper to run async code synchronously (safe for Tkinter)"""
+    try:
+        return asyncio.run(coro)
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(coro)
+        loop.close()
+        return result
 
 # ================= CHAT PAGE ===================
 class ChatBubbleApp(tk.Frame):
@@ -48,17 +64,18 @@ class ChatBubbleApp(tk.Frame):
         # Style the scrollbar
         style = ttk.Style()
         style.theme_use('clam')
-        style.configure("Vertical.TScrollbar", 
-                       background="#CCCCCC",  # Gray by default
-                       troughcolor=self.bg_color,
-                       bordercolor=self.bg_color,
-                       arrowcolor="white",
-                       width=8)  # Smaller width
+        style.configure("Vertical.TScrollbar",
+                        background="#CCCCCC",  # Gray by default
+                        troughcolor=self.bg_color,
+                        bordercolor=self.bg_color,
+                        arrowcolor="white",
+                        width=8)  # Smaller width
         style.map("Vertical.TScrollbar",
-                 background=[('active', '#4A90E2')])  # Blue on hover
+                  background=[('active', '#4A90E2')])  # Blue on hover
 
         self.chat_canvas = tk.Canvas(chat_frame, bg=self.bg_color, bd=0, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(chat_frame, orient="vertical", command=self.chat_canvas.yview, style="Vertical.TScrollbar")
+        scrollbar = ttk.Scrollbar(chat_frame, orient="vertical", command=self.chat_canvas.yview,
+                                  style="Vertical.TScrollbar")
         self.scrollable_frame = tk.Frame(self.chat_canvas, bg=self.bg_color)
 
         self.scrollable_frame.bind(
@@ -96,7 +113,7 @@ class ChatBubbleApp(tk.Frame):
         """Load previous conversation messages for this bot"""
         if self.bot_name in self.controller.conversation_history:
             for msg_data in self.controller.conversation_history[self.bot_name]:
-                self.add_message(msg_data["name"], msg_data["message"], sender=msg_data["sender"], save_to_history=False)
+                self.add_message(msg_data["name"], msg_data["message"], sender=msg_data["sender"])
         else:
             # Welcome message for new conversation
             self.add_message("System", f"Welcome to {self.bot_name}!", sender="bot")
@@ -104,23 +121,23 @@ class ChatBubbleApp(tk.Frame):
             self.controller.conversation_history[self.bot_name] = []
 
     def _on_mousewheel(self, event):
-        self.chat_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        self.chat_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def apply_theme(self, theme_name):
         if theme_name == "Dark Mode":
             self.bg_color = "#2c2f33"
             self.fg_color = "#ffffff"
             self.user_bubble_color = "#4A90E2"  # keep blue
-            self.bot_bubble_color = "#5CB85C"   # keep green
-            self.text_color = "#FFFFFF"         # white text
+            self.bot_bubble_color = "#5CB85C"  # keep green
+            self.text_color = "#FFFFFF"  # white text
             self.entry_bg = "#23272a"
             self.entry_fg = "#ffffff"
         else:  # Light Mode
-            self.bg_color = "#FFFFFF"          # white background
+            self.bg_color = "#FFFFFF"  # white background
             self.fg_color = "#000000"
             self.user_bubble_color = "#4A90E2"  # blue chat bubbles
-            self.bot_bubble_color = "#5CB85C"   # green bot bubbles
-            self.text_color = "#FFFFFF"         # white text on colored bubbles
+            self.bot_bubble_color = "#5CB85C"  # green bot bubbles
+            self.text_color = "#FFFFFF"  # white text on colored bubbles
             self.entry_bg = "white"
             self.entry_fg = "black"
 
@@ -128,7 +145,7 @@ class ChatBubbleApp(tk.Frame):
         # Contacts page always stays in light mode
         self.controller.show_frame("ContactsPage")
 
-    def add_message(self, name, message, sender="user", save_to_history=True):
+    def add_message(self, name, message, sender="user"):
         bubble_frame = tk.Frame(self.scrollable_frame, bg=self.bg_color)
         if sender == "user":
             bubble_color = self.user_bubble_color
@@ -153,38 +170,75 @@ class ChatBubbleApp(tk.Frame):
 
         bubble_frame.pack(fill="x", pady=2)
         self.after(100, lambda: self.chat_canvas.yview_moveto(1))
-        
-        # Save to conversation history
-        if save_to_history:
-            if self.bot_name not in self.controller.conversation_history:
-                self.controller.conversation_history[self.bot_name] = []
-            self.controller.conversation_history[self.bot_name].append({
-                "name": name,
-                "message": message,
-                "sender": sender
-            })
+
+    # Finds the contact and saves the user message under that contact
+    def save_user_message(language, message):
+        tree = ET.parse("Contacts.xml")
+        root = tree.getroot()
+
+        # Find the language node (e.g., <French>)
+        lang_el = root.find(language)
+
+        if lang_el is None:
+            # If somehow missing, create it
+            lang_el = ET.SubElement(root, language)
+
+        # Create the message element
+        msg_el = ET.SubElement(lang_el, "UserMessage")
+        msg_el.text = message
+
+        # Save changes
+        tree.write("Contacts.xml", encoding="utf-8", xml_declaration=True)
 
     def send_message(self, event=None):
         msg = self.entry.get().strip()
+
         if not msg:
             return
 
-        # Add user message to UI
+        # Add to UI
         self.add_message("You", msg, sender="user")
+
+        # Determine language name (remove " Bot")
+        language = self.bot_name.replace(" Bot", "")
+
+        # Save to XML
+        xml_creator = XmlCreator("Contacts.xml")
+        xml_creator.add_user_message(XmlCreator.get_language_from_contact(self.bot_name), msg)
+
         self.entry.delete(0, tk.END)
 
         # After delay, add bot reply
         self.after(600, lambda: self.add_message(
             self.bot_name,
-            self.bot_reply(msg),  # <-- bot_reply now returns a string
+            self.bot_reply(msg),  # now returns a string, safe for Tkinter
             sender="bot"
         ))
 
-    def bot_reply(self, msg):
+    def bot_reply(self, user_msg):
         bot = ChatBot()
-        reply = bot.sendMessage(msg)
-        return reply
+        # 1️⃣ Get bot response
+        reply = bot.sendMessage(user_msg)  # Gemini returns plain string
 
+        # 2️⃣ Determine target language from selected contact
+        target_language = XmlCreator.get_language_from_contact(self.bot_name)
+
+        # 3️⃣ Translate reply to target language
+
+        LANG_CODES = {
+            "French": "fr",
+            "Spanish": "es",
+            "German": "de",
+            "Italian": "it",
+            "Portuguese": "pt",
+            "Chinese": "zh-cn",
+            "Japanese": "ja",
+            "Korean": "ko"
+        }
+        lang_code = LANG_CODES.get(target_language, "en")
+        translated_reply = run_async(Languages.translate_text(reply, dest=lang_code))
+
+        return translated_reply
 
     def open_settings(self):
         settings_page_name = f"{self.bot_name}SettingsPage"
@@ -274,13 +328,13 @@ class ThemePage(tk.Toplevel):
         if chat_frame and chat_frame.bot_name == self.bot_name:
             chat_frame.theme = theme_name
             chat_frame.apply_theme(theme_name)
-            
+
             # Update all UI elements
             chat_frame.configure(bg=chat_frame.bg_color)
             chat_frame.chat_canvas.configure(bg=chat_frame.bg_color)
             chat_frame.scrollable_frame.configure(bg=chat_frame.bg_color)
             chat_frame.entry.configure(bg=chat_frame.entry_bg, fg=chat_frame.entry_fg)
-            
+
             # Update top bar elements
             for widget in chat_frame.winfo_children():
                 if isinstance(widget, tk.Frame):
@@ -288,7 +342,7 @@ class ThemePage(tk.Toplevel):
                     for child in widget.winfo_children():
                         if isinstance(child, (tk.Label, tk.Button)):
                             child.configure(bg=chat_frame.bg_color, fg=chat_frame.fg_color)
-            
+
             # Update all existing message bubbles
             for widget in chat_frame.scrollable_frame.winfo_children():
                 widget.configure(bg=chat_frame.bg_color)
@@ -316,9 +370,11 @@ class DifficultyPage(tk.Toplevel):
         self.parent = parent
         self.bot_name = bot_name
 
-        tk.Label(self, text="Select Difficulty", font=("Helvetica", 18, "bold"), bg="#FFFFFF", fg="#5CB85C").pack(pady=30)
+        tk.Label(self, text="Select Difficulty", font=("Helvetica", 18, "bold"), bg="#FFFFFF", fg="#5CB85C").pack(
+            pady=30)
         ttk.Button(self, text="Beginner - A1", command=lambda: self.set_difficulty("Beginner - A1")).pack(pady=10)
-        ttk.Button(self, text="Intermediate - B1", command=lambda: self.set_difficulty("Intermediate - B1")).pack(pady=10)
+        ttk.Button(self, text="Intermediate - B1", command=lambda: self.set_difficulty("Intermediate - B1")).pack(
+            pady=10)
         ttk.Button(self, text="Advanced - C1", command=lambda: self.set_difficulty("Advanced - C1")).pack(pady=10)
         ttk.Button(self, text="Back", command=self.go_back).pack(pady=30)
 
@@ -337,9 +393,12 @@ class ContactsPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.configure(bg="#FFFFFF")
-        
-        # Track contacts
+
+        # Track contacts BEFORE loading
         self.contacts = []
+
+        # Load saved XML contacts
+        self.load_existing_contacts()
 
         # Header
         header = tk.Frame(self, bg="#4A90E2", height=50)
@@ -354,58 +413,91 @@ class ContactsPage(tk.Frame):
                             command=self.prompt_add_contact)
         add_btn.pack(side="right", padx=15)
 
-        # Contacts list starts empty
-    
-    def prompt_add_contact(self):
-        from tkinter import messagebox, simpledialog
-        
-        # Ask if they want to add a contact
-        result = messagebox.askyesno("Add Contact", "Would you like to add a new contact?")
-        
-        if result:
-            # Ask what language
-            language = simpledialog.askstring("Language", "What language would you like to learn?")
-            
-            if language:
-                language = language.strip().capitalize()
-                bot_name = f"{language} Bot"
-                
-                # Check if already exists
-                if bot_name in self.contacts:
-                    messagebox.showinfo("Already Added", f"{bot_name} is already in your contacts!")
-                    return
-                
-                # Define colors for different languages
-                language_colors = {
-                    "French": "#2318f0",
-                    "Spanish": "#e82217",
-                    "German": "#f2d202",
-                    "Italian": "#009246",
-                    "Portuguese": "#006600",
-                    "Chinese": "#DE2910",
-                    "Japanese": "#BC002D",
-                    "Korean": "#003478",
+    def load_existing_contacts(self):
+        xml_creator = XmlCreator("Contacts.xml")
+
+        for lang_el in xml_creator.root:
+            language = lang_el.tag
+            bot_name = f"{language} Bot"
+
+            if bot_name in self.contacts:
+                continue
+
+            language_colors = {
+                "French": "#2318f0",
+                "Spanish": "#e82217",
+                "German": "#f2d202",
+                "Italian": "#009246",
+                "Portuguese": "#006600",
+                "Chinese": "#DE2910",
+                "Japanese": "#BC002D",
+                "Korean": "#003478",
+            }
+
+            color = language_colors.get(language, "#4A90E2")
+            initials = language[:2].upper()
+            y_position = 70 + len(self.contacts) * 80
+
+            if bot_name not in self.controller.bot_settings:
+                self.controller.bot_settings[bot_name] = {
+                    "theme": "Light Mode",
+                    "difficulty": "Beginner - A1"
                 }
-                
-                # Get color for language or use default blue
-                color = language_colors.get(language, "#4A90E2")
-                
-                # Get initials (first 2 letters)
-                initials = language[:2].upper()
-                
-                # Calculate position
-                y_position = 70 + len(self.contacts) * 80
-                
-                # Add to bot_settings if not exists
-                if bot_name not in self.controller.bot_settings:
-                    self.controller.bot_settings[bot_name] = {
-                        "theme": "Light Mode",
-                        "difficulty": "Beginner - A1"
-                    }
-                
-                # Add the contact
-                self.add_contact(y_position, bot_name, initials, 0, color)
-                self.contacts.append(bot_name)
+
+            self.add_contact(y_position, bot_name, initials, 0, color)
+            self.contacts.append(bot_name)
+
+    def language_exists(self, xml_creator, language):
+        return xml_creator.root.find(language) is not None
+
+    def prompt_add_contact(self, xml_creator=None):
+        from tkinter import messagebox, simpledialog
+
+        result = messagebox.askyesno("Add Contact", "Would you like to add a new contact?")
+        if not result:
+            return
+
+        language = simpledialog.askstring("Language", "What language would you like to learn?")
+        if not language:
+            return
+
+        language = language.strip().capitalize()
+        bot_name = f"{language} Bot"
+
+        xml_creator = xml_creator or XmlCreator("Contacts.xml")
+
+        # Check duplicates before writing XML
+        if bot_name in self.contacts or self.language_exists(xml_creator, language):
+            messagebox.showinfo("Already Added", f"{bot_name} is already in your contacts!")
+            return
+
+        # Safe to add to XML now
+        xml_creator.add_element(xml_creator.root, language)
+        xml_creator.write_to_xml("Contacts.xml")
+
+        language_colors = {
+            "French": "#2318f0",
+            "Spanish": "#e82217",
+            "German": "#f2d202",
+            "Italian": "#009246",
+            "Portuguese": "#006600",
+            "Chinese": "#DE2910",
+            "Japanese": "#BC002D",
+            "Korean": "#003478",
+        }
+
+        color = language_colors.get(language, "#4A90E2")
+        initials = language[:2].upper()
+        y_position = 70 + len(self.contacts) * 80
+
+        if bot_name not in self.controller.bot_settings:
+            self.controller.bot_settings[bot_name] = {
+                "theme": "Light Mode",
+                "difficulty": "Beginner - A1"
+            }
+
+        self.add_contact(y_position, bot_name, initials, 0, color)
+        self.contacts.append(bot_name)
 
     def add_contact(self, y, name, initials, progress, color="#4A90E2"):
         frame = tk.Frame(self, bg="white")
@@ -445,7 +537,7 @@ class LanguageApp(tk.Tk):
             "Spanish Bot": {"theme": "Light Mode", "difficulty": "Beginner - A1"},
             "German Bot": {"theme": "Light Mode", "difficulty": "Beginner - A1"},
         }
-        
+
         # Store conversation history for each bot
         self.conversation_history = {}
 
