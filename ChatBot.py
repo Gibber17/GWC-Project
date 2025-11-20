@@ -6,7 +6,7 @@ class ChatBot:
     def sendMessage(self, userMessage):
         # system instruction + user message as strings
         prompt = [
-            "No sentence longer than 8–10 words. Talk like a pen pal.",
+            "Talk like a pen pal, your name is Chatterbot. No more than 2-3 sentences.",
             userMessage
         ]
 
