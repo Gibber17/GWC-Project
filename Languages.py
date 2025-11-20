@@ -1,17 +1,24 @@
-# before running this you must enter this in your terminal: pip install googletrans
 import asyncio
 from googletrans import Translator, LANGUAGES
 
-# Print available languages
-for lang_code, lang_name in LANGUAGES.items():
-    print(f"{lang_code}: {lang_name}")
+class Languages:
+    @staticmethod
+    async def translate_text(text, dest='en', src='auto'):
+        # always convert to list
+        if isinstance(text, (list, tuple)):
+            text_list = list(text)
+        else:
+            text_list = [text]
 
-async def translate_text(text, dest='en', src='auto'):
-    async with Translator() as translator:
-        result = await translator.translate(text, dest=dest, src=src)
-        print(f"Original ({result.src}): {text}")
-        print(f"Translated ({result.dest}): {result.text}")
-        return result.text
+        async with Translator() as translator:
+            results = await translator.translate(text_list, dest=dest, src=src)
 
+        # googletrans sometimes returns a single object, sometimes a list
+        if not isinstance(results, list):
+            results = [results]
 
-asyncio.run(translate_text("안녕하세요", dest='en'))
+        # return a single string if only one input
+        if len(text_list) == 1:
+            return results[0].text
+
+        return [r.text for r in results]
