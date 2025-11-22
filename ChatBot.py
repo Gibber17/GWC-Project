@@ -1,6 +1,6 @@
 from google import genai
 
-client = genai.Client(api_key="AIzaSyAmegGOYvBn_jsnrZjW6OAdENgt-j1qQ-A")
+client = genai.Client(api_key="YOUR API KEY HERE")
 
 class ChatBot:
     def sendMessage(self, userMessage):
@@ -16,3 +16,4 @@ class ChatBot:
         )
 
         return response.text
+
